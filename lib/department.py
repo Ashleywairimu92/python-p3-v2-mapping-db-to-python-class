@@ -64,11 +64,42 @@ class Department:
         CONN.commit()
 
     def delete(self):
-        """Delete the table row corresponding to the current Department instance"""
+        """Delete the instance's corresponding database row."""
         sql = """
             DELETE FROM departments
             WHERE id = ?
         """
-
+        
         CURSOR.execute(sql, (self.id,))
         CONN.commit()
+        Department.all.pop(self.id, None)  # Remove from class-level dictionary
+        self.id = None  # Reset the instance's id to None
+
+
+    @classmethod
+    def find_by_id(cls, id):
+        """Return a Department instance corresponding to the db row retrieved by id."""
+        sql = "SELECT * FROM departments WHERE id = ?"
+        row = CURSOR.execute(sql, (id,)).fetchone()
+        return cls.instance_from_db(row) if row else None
+
+    @classmethod
+    def find_by_name(cls, name):
+        """Return a Department instance corresponding to the db row retrieved by name."""
+        sql = "SELECT * FROM departments WHERE name = ?"
+        row = CURSOR.execute(sql, (name,)).fetchone()
+        return cls.instance_from_db(row) if row else None
+
+    @classmethod
+    def instance_from_db(cls, row):
+        """Take a table row and return a Department instance."""
+        department = cls(row[1], row[2])  # Assuming row[0] is id, row[1] is name, row[2] is location
+        department.id = row[0]
+        return department
+
+    @classmethod
+    def get_all(cls):
+        """Return a list of Department instances for every row in the db."""
+        sql = "SELECT * FROM departments"
+        rows = CURSOR.execute(sql).fetchall()
+        return [cls.instance_from_db(row) for row in rows]
